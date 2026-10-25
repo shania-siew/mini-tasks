@@ -1,0 +1,157 @@
+"use client";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import TaskForm from "@/components/TaskForm";
+import { api, session } from "@/lib/api";
+
+const STATUS_LABEL = { todo: "To do", in_progress: "In progress", done: "Done" };
+
+export default function Dashboard() {
+  const router = useRouter();
+  const [tasks, setTasks] = useState([]);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [thisWeek, setThisWeek] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [email, setEmail] = useState("");
+
+  const logout = useCallback(() => {
+    session.clear();
+    router.replace("/login");
+  }, [router]);
+
+  const load = useCallback(async () => {
+    const params = new URLSearchParams();
+    if (statusFilter) params.set("status", statusFilter);
+    if (thisWeek) params.set("due_this_week", "true");
+    try {
+      setTasks(await api(`/tasks?${params}`));
+      setError("");
+    } catch (err) {
+      if (err.status === 401) return logout();
+      setError(err.message || "Failed to load tasks");
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter, thisWeek, logout]);
+
+  useEffect(() => {
+    if (!session.token()) {
+      router.replace("/login");
+      return;
+    }
+    setEmail(session.user()?.email ?? "");
+  }, [router]);
+
+  useEffect(() => {
+    if (session.token()) load();
+  }, [load]);
+
+  async function create(input) {
+    await api("/tasks", "POST", input);
+    await load();
+  }
+
+  async function update(id, input) {
+    const updated = await api(`/tasks/${id}`, "PATCH", input);
+    setTasks((ts) => ts.map((t) => (t.id === id ? updated : t)));
+    setEditingId(null);
+  }
+
+  // Optimistic status change with rollback on failure
+  async function changeStatus(task, status) {
+    const prev = tasks;
+    setTasks((ts) => ts.map((t) => (t.id === task.id ? { ...t, status } : t)));
+    try {
+      await api(`/tasks/${task.id}`, "PATCH", { status });
+    } catch {
+      setTasks(prev);
+      setError("Could not update status");
+    }
+  }
+
+  // Optimistic delete with rollback on failure
+  async function remove(task) {
+    if (!confirm(`Delete "${task.title}"?`)) return;
+    const prev = tasks;
+    setTasks((ts) => ts.filter((t) => t.id !== task.id));
+    try {
+      await api(`/tasks/${task.id}`, "DELETE");
+    } catch {
+      setTasks(prev);
+      setError("Could not delete task");
+    }
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  return (
+    <>
+      <header className="top">
+        <h1>Mini Tasks</h1>
+        <div>
+          <span className="muted">{email}</span> <button onClick={logout}>Sign out</button>
+        </div>
+      </header>
+
+      <TaskForm onSubmit={create} />
+
+      <section aria-label="Filters" className="filters">
+        <label>
+          Status
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="">All</option>
+            <option value="todo">To do</option>
+            <option value="in_progress">In progress</option>
+            <option value="done">Done</option>
+          </select>
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={thisWeek} onChange={(e) => setThisWeek(e.target.checked)} />
+          Due this week
+        </label>
+      </section>
+
+      {error && <p role="alert" className="error">{error}</p>}
+      {loading && <p className="muted">Loading…</p>}
+      {!loading && tasks.length === 0 && <p className="muted">No tasks yet. Add one above.</p>}
+
+      <ul className="tasks">
+        {tasks.map((t) =>
+          editingId === t.id ? (
+            <li key={t.id}>
+              <TaskForm initial={t} onSubmit={(input) => update(t.id, input)} onCancel={() => setEditingId(null)} />
+            </li>
+          ) : (
+            <li key={t.id} className={`card task ${t.status}`}>
+              <div className="grow">
+                <strong>{t.title}</strong> <span className={`badge ${t.priority}`}>{t.priority}</span>
+                {t.description && <p className="muted">{t.description}</p>}
+                {t.due_date && (
+                  <small className={t.due_date < today && t.status !== "done" ? "error" : "muted"}>
+                    Due {t.due_date}
+                    {t.due_date < today && t.status !== "done" ? " (overdue)" : ""}
+                  </small>
+                )}
+              </div>
+              <div className="row">
+                <select
+                  aria-label={`Status of ${t.title}`}
+                  value={t.status}
+                  onChange={(e) => changeStatus(t, e.target.value)}
+                >
+                  {Object.keys(STATUS_LABEL).map((s) => (
+                    <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+                  ))}
+                </select>
+                <button onClick={() => setEditingId(t.id)} aria-label={`Edit ${t.title}`}>Edit</button>
+                <button onClick={() => remove(t)} aria-label={`Delete ${t.title}`}>Delete</button>
+              </div>
+            </li>
+          )
+        )}
+      </ul>
+    </>
+  );
+}

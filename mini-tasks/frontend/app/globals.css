@@ -1,0 +1,33 @@
+:root {
+  --bg: #f6f7f9; --fg: #1c1f23; --muted: #5f6b7a; --card: #fff; --border: #d9dee5;
+  --accent: #2557d6; --danger: #c0262d;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #14171a; --fg: #e8eaed; --muted: #9aa5b1; --card: #1d2227; --border: #323a42; --accent: #6d9bff; --danger: #ff6b72; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, sans-serif; }
+main { max-width: 760px; margin: 0 auto; padding: 1rem; }
+.skip { position: absolute; left: -999px; } .skip:focus { left: 8px; top: 8px; background: var(--card); padding: 4px 8px; }
+h1, h2 { margin: 0 0 .5rem; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin: 1rem 0; }
+.auth { max-width: 380px; margin: 10vh auto; }
+label { display: flex; flex-direction: column; gap: 4px; margin-bottom: .75rem; font-size: .9rem; }
+input, select, textarea, button { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: .45rem .6rem; }
+button { cursor: pointer; } button:disabled { opacity: .5; cursor: not-allowed; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row { display: flex; gap: .5rem; flex-wrap: wrap; align-items: end; }
+.row > label { flex: 1; min-width: 130px; }
+.actions { align-items: center; }
+.grow { flex: 1; }
+.top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem; }
+.filters { display: flex; gap: 1rem; align-items: end; flex-wrap: wrap; }
+.check { flex-direction: row; align-items: center; }
+.tasks { list-style: none; padding: 0; margin: 0; }
+.task { display: flex; gap: 1rem; justify-content: space-between; flex-wrap: wrap; }
+.task.done strong { text-decoration: line-through; opacity: .6; }
+.task p { margin: .25rem 0; }
+.badge { font-size: .7rem; text-transform: uppercase; padding: 1px 6px; border-radius: 99px; border: 1px solid var(--border); }
+.badge.high { color: var(--danger); border-color: var(--danger); }
+.muted { color: var(--muted); } .error { color: var(--danger); }
