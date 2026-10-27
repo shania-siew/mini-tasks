@@ -38,13 +38,14 @@ frontend/
 ### API
 | Method | Path | Notes |
 |---|---|---|
-| POST | `/auth/signup` | 201, 409 duplicate email, 422 validation |
-| POST | `/auth/login` | 200, 401 invalid credentials |
+| POST | `/auth/signup` | 201, 409 duplicate email, 422 validation, 429 rate limited |
+| POST | `/auth/login` | 200, 401 invalid credentials, 429 after 10 failures / 5 min |
 | GET | `/auth/me` | current user |
-| GET | `/tasks?status=&due_this_week=` | only the caller's tasks |
+| GET | `/tasks?status=&due_this_week=&today=` | only the caller's tasks; `today` (YYYY-MM-DD) is the browser's local date so "this week" matches the user's timezone |
 | POST | `/tasks` | 201 |
 | GET / PATCH / DELETE | `/tasks/{id}` | 404 if missing or not yours; DELETE → 204 |
-| POST | `/ai/suggest-due-date` | `{title, description}` → `{due_date, reason}` |
+| GET | `/ai/status` | `{enabled}`; the UI hides the AI button when no key is set |
+| POST | `/ai/suggest-due-date` | `{title, description}` → `{due_date, reason}` (503 if no key, 502 on upstream failure) |
 | GET | `/health` | pings MongoDB |
 
 ## Run locally
@@ -74,12 +75,17 @@ npm install
 npm run dev                                           # http://localhost:3000
 ```
 
-### Tests
+### Tests and linting
 ```bash
-cd backend && pytest -q     # 9 tests, uses mongomock (no DB needed)
-cd frontend && npm run lint && npm run build
+cd backend
+pytest -q                   # 13 tests, uses mongomock (no DB needed)
+ruff check . && ruff format --check .
+
+cd frontend
+npm test                    # 4 tests (Vitest)
+npm run lint && npm run build
 ```
-CI (`.github/workflows/ci.yml`) runs both on every push.
+CI (`.github/workflows/ci.yml`) runs all of these on every push.
 
 ## Environment variables
 
@@ -95,7 +101,17 @@ CI (`.github/workflows/ci.yml`) runs both on every push.
 
 **Frontend**: `NEXT_PUBLIC_API_URL`. It is baked in at build time, so set it before building.
 
-## Deployment (DigitalOcean App Platform)
+## Deployment (Render)
+Two Docker web services plus MongoDB Atlas (free M0).
+1. **Backend**: New Web Service, runtime Docker, Dockerfile path `./backend/Dockerfile`, build context `./backend`, health check path `/health`.
+   Env vars: `MONGO_URI`, `MONGO_DB=minitasks`, `JWT_SECRET` (long random), `ENV=production`, `CORS_ORIGINS=<frontend URL, no trailing slash>`, optional `OPENAI_API_KEY`.
+2. **Frontend**: New Web Service, runtime Docker, Dockerfile path `./frontend/Dockerfile`, build context `./frontend`. Env var `NEXT_PUBLIC_API_URL=<backend URL, no trailing slash>` (build-time; redeploy after changing it).
+3. Deploy the backend first, then the frontend, then set the frontend URL in the backend's `CORS_ORIGINS` and redeploy the backend.
+4. Seed the demo user once against the same Atlas database: `cd backend && python -m scripts.seed_demo`.
+
+Note: Render's free instances sleep after ~15 idle minutes, so the first request after a pause can take about a minute.
+
+## Deployment (alternative: DigitalOcean App Platform)
 1. Create a MongoDB Atlas free cluster (or a DO Managed MongoDB); allow network access; copy the connection string.
 2. Push this repo to GitHub. In DO, create an App with two components from the repo:
    - **backend**: source dir `backend`, Dockerfile build, HTTP port 8000, health check path `/health`. Set env vars above (`ENV=production`, strong `JWT_SECRET`, `MONGO_URI`, `CORS_ORIGINS=https://<frontend-url>`, `OPENAI_API_KEY`).
@@ -118,8 +134,10 @@ CI (`.github/workflows/ci.yml`) runs both on every push.
 ## Tradeoffs & future improvements
 - **JWT in localStorage**: simple and works across two domains, but exposed to XSS. Better: httpOnly, SameSite cookies with a shared parent domain/proxy plus CSRF protection, and refresh tokens.
 - **Dates stored as ISO strings** (`YYYY-MM-DD`): easy range queries, no timezone surprises for date-only values; "this week" uses the server's date (Mon–Sun).
-- **No rate limiting** on login or AI endpoints. Would add `slowapi` or a gateway limit and account lockout.
+- **Rate limiting is in-memory** (login: 10 failures / 5 min per IP+email; signup: 20 / hour per IP). It resets on restart and is per-instance; with several instances I would move it to Redis. The AI endpoint is auth-protected but not separately rate limited.
+- **Plain JavaScript frontend** (no TypeScript) to keep the code approachable; the API contract is enforced server-side by Pydantic, and types would be the first thing I'd add to the frontend with more time.
+- **Free-tier cold starts**: the free backend sleeps when idle, so the first request can be slow.
 - **Sync PyMongo** in FastAPI's threadpool instead of Motor, for simplicity; async driver would scale better.
 - **Realtime**: optimistic UI is implemented for status change and delete (with rollback); SSE/WebSocket sync across tabs is future work.
-- **Testing**: backend API tests use mongomock; would add a few frontend component tests (Vitest + Testing Library) and Playwright e2e.
+- **Testing**: backend API tests use mongomock; the frontend has unit tests for the API client only. Next would be component tests (Testing Library) and Playwright e2e.
 - Pagination, task search, email verification and password reset are not implemented.

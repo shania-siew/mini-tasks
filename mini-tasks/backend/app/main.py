@@ -40,7 +40,7 @@ def health(db: Database = Depends(get_db)):
     try:
         db.command("ping")
     except Exception:
-        raise HTTPException(503, "Database unavailable")
+        raise HTTPException(503, "Database unavailable") from None
     return {"status": "ok"}
 
 

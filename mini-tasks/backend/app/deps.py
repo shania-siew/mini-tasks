@@ -24,7 +24,7 @@ def get_current_user(
         user_id = decode_access_token(creds.credentials)
         user = db.users.find_one({"_id": ObjectId(user_id)})
     except (jwt.PyJWTError, InvalidId, KeyError):
-        raise unauthorized
+        raise unauthorized from None
     if not user:
         raise unauthorized
     return {"id": str(user["_id"]), "email": user["email"]}

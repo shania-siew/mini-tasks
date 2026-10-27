@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -34,7 +34,7 @@ class TaskCreate(BaseModel):
     description: str = Field(default="", max_length=2000)
     priority: Priority = "medium"
     status: Status = "todo"
-    due_date: Optional[date] = None
+    due_date: date | None = None
 
     @field_validator("title")
     @classmethod
@@ -46,11 +46,11 @@ class TaskCreate(BaseModel):
 
 
 class TaskUpdate(BaseModel):
-    title: Optional[str] = Field(default=None, min_length=1, max_length=120)
-    description: Optional[str] = Field(default=None, max_length=2000)
-    priority: Optional[Priority] = None
-    status: Optional[Status] = None
-    due_date: Optional[date] = None  # send null explicitly to clear
+    title: str | None = Field(default=None, min_length=1, max_length=120)
+    description: str | None = Field(default=None, max_length=2000)
+    priority: Priority | None = None
+    status: Status | None = None
+    due_date: date | None = None  # send null explicitly to clear
 
 
 class TaskOut(BaseModel):
@@ -59,7 +59,7 @@ class TaskOut(BaseModel):
     description: str
     priority: Priority
     status: Status
-    due_date: Optional[date]
+    due_date: date | None
 
 
 class SuggestIn(BaseModel):

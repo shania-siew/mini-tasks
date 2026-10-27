@@ -1,4 +1,5 @@
 """Create the demo (non-admin) user: python -m scripts.seed_demo"""
+
 from datetime import datetime, timezone
 
 from app.db import ensure_indexes, get_db
@@ -13,6 +14,10 @@ if __name__ == "__main__":
         print("Demo user already exists")
     else:
         db.users.insert_one(
-            {"email": EMAIL, "password_hash": hash_password(PASSWORD), "created_at": datetime.now(timezone.utc)}
+            {
+                "email": EMAIL,
+                "password_hash": hash_password(PASSWORD),
+                "created_at": datetime.now(timezone.utc),
+            }
         )
         print(f"Created {EMAIL} / {PASSWORD}")

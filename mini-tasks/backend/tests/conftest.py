@@ -8,12 +8,15 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from app.db import get_db  # noqa: E402
 from app.main import app  # noqa: E402
+from app.routers.auth import login_limiter, signup_limiter  # noqa: E402
 
 
 @pytest.fixture
 def client():
     db = mongomock.MongoClient()["test"]
     app.dependency_overrides[get_db] = lambda: db
+    login_limiter.clear()
+    signup_limiter.clear()
     yield TestClient(app)
     app.dependency_overrides.clear()
 

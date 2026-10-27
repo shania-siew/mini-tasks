@@ -1,5 +1,4 @@
 from datetime import date, datetime, timedelta, timezone
-from typing import Optional
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -28,7 +27,7 @@ def parse_id(task_id: str) -> ObjectId:
     try:
         return ObjectId(task_id)
     except InvalidId:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Task not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Task not found") from None
 
 
 def week_bounds(today: date) -> tuple[str, str]:
@@ -39,8 +38,10 @@ def week_bounds(today: date) -> tuple[str, str]:
 
 @router.get("", response_model=list[TaskOut])
 def list_tasks(
-    status_filter: Optional[Status] = Query(default=None, alias="status"),
+    status_filter: Status | None = Query(default=None, alias="status"),
     due_this_week: bool = False,
+    # The browser sends its own local date so "this week" matches the user's timezone
+    today: date | None = None,
     user: dict = Depends(get_current_user),
     db: Database = Depends(get_db),
 ):
@@ -48,7 +49,7 @@ def list_tasks(
     if status_filter:
         query["status"] = status_filter
     if due_this_week:
-        start, end = week_bounds(date.today())
+        start, end = week_bounds(today or date.today())
         query["due_date"] = {"$gte": start, "$lte": end}
     docs = list(db.tasks.find(query))
     # Tasks with due dates first (soonest first), then undated ones

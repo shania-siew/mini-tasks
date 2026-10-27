@@ -22,6 +22,12 @@ def clamp(d: date, today: date) -> date:
     return min(max(d, today), today + timedelta(days=365))
 
 
+@router.get("/status")
+def ai_status():
+    """Lets the frontend hide the button when no OpenAI key is configured."""
+    return {"enabled": bool(settings.openai_api_key)}
+
+
 @router.post("/suggest-due-date", response_model=SuggestOut)
 def suggest_due_date(body: SuggestIn, _user: dict = Depends(get_current_user)):
     if not settings.openai_api_key:
@@ -50,5 +56,5 @@ def suggest_due_date(body: SuggestIn, _user: dict = Depends(get_current_user)):
         reason = str(data.get("reason", ""))[:140]
     except (httpx.HTTPError, KeyError, ValueError, json.JSONDecodeError):
         # Never leak upstream details to the client
-        raise HTTPException(502, "Could not get a suggestion right now")
+        raise HTTPException(502, "Could not get a suggestion right now") from None
     return SuggestOut(due_date=suggested, reason=reason)

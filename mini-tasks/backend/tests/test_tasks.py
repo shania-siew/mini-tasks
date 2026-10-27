@@ -12,7 +12,9 @@ def test_crud(client, auth_headers):
     t = make(client, auth_headers, title="Write docs", priority="high")
     assert t["status"] == "todo"
 
-    r = client.patch(f"/tasks/{t['id']}", json={"status": "done", "due_date": "2030-01-02"}, headers=auth_headers)
+    r = client.patch(
+        f"/tasks/{t['id']}", json={"status": "done", "due_date": "2030-01-02"}, headers=auth_headers
+    )
     assert r.status_code == 200
     assert r.json()["status"] == "done" and r.json()["due_date"] == "2030-01-02"
 
@@ -26,7 +28,9 @@ def test_crud(client, auth_headers):
 def test_filters(client, auth_headers):
     today = date.today()
     make(client, auth_headers, title="soon", due_date=(today).isoformat())
-    make(client, auth_headers, title="later", due_date=(today + timedelta(days=60)).isoformat(), status="done")
+    make(
+        client, auth_headers, title="later", due_date=(today + timedelta(days=60)).isoformat(), status="done"
+    )
 
     week = client.get("/tasks?due_this_week=true", headers=auth_headers).json()
     assert [t["title"] for t in week] == ["soon"]
@@ -45,4 +49,16 @@ def test_users_cannot_see_each_others_tasks(client, auth_headers):
 
 def test_task_validation(client, auth_headers):
     assert client.post("/tasks", json={"title": "   "}, headers=auth_headers).status_code == 422
-    assert client.post("/tasks", json={"title": "x", "priority": "urgent"}, headers=auth_headers).status_code == 422
+    assert (
+        client.post("/tasks", json={"title": "x", "priority": "urgent"}, headers=auth_headers).status_code
+        == 422
+    )
+
+
+def test_due_this_week_uses_client_supplied_today(client, auth_headers):
+    make(client, auth_headers, title="far", due_date="2031-03-05")
+    # 2031-03-05 is a Wednesday; its week is Mon 03-03 .. Sun 03-09
+    hit = client.get("/tasks?due_this_week=true&today=2031-03-08", headers=auth_headers).json()
+    assert [t["title"] for t in hit] == ["far"]
+    miss = client.get("/tasks?due_this_week=true&today=2031-03-10", headers=auth_headers).json()
+    assert miss == []

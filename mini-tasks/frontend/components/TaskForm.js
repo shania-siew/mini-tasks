@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 
 // Props:
@@ -15,6 +15,18 @@ export default function TaskForm({ initial, onSubmit, onCancel }) {
   const [error, setError] = useState("");
   const [hint, setHint] = useState("");
   const [suggesting, setSuggesting] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(false);
+
+  // Only show the AI button when the backend has an OpenAI key configured
+  useEffect(() => {
+    let active = true;
+    api("/ai/status")
+      .then((res) => active && setAiEnabled(res.enabled))
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function suggest() {
     setSuggesting(true);
@@ -81,9 +93,11 @@ export default function TaskForm({ initial, onSubmit, onCancel }) {
         </label>
       </div>
       <div className="row actions">
-        <button type="button" onClick={suggest} disabled={suggesting || description.trim().length < 3}>
-          {suggesting ? "Thinking…" : "✨ Suggest due date"}
-        </button>
+        {aiEnabled && (
+          <button type="button" onClick={suggest} disabled={suggesting || description.trim().length < 3}>
+            {suggesting ? "Thinking…" : "✨ Suggest due date"}
+          </button>
+        )}
         <span className="grow" />
         {onCancel && <button type="button" onClick={onCancel}>Cancel</button>}
         <button className="primary">{initial ? "Save" : "Add task"}</button>

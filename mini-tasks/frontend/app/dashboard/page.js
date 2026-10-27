@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import TaskForm from "@/components/TaskForm";
 import { api, session } from "@/lib/api";
+import { todayLocal } from "@/lib/date";
 
 const STATUS_LABEL = { todo: "To do", in_progress: "In progress", done: "Done" };
 
@@ -24,7 +25,10 @@ export default function Dashboard() {
   const load = useCallback(async () => {
     const params = new URLSearchParams();
     if (statusFilter) params.set("status", statusFilter);
-    if (thisWeek) params.set("due_this_week", "true");
+    if (thisWeek) {
+      params.set("due_this_week", "true");
+      params.set("today", todayLocal()); // server uses our local date for "this week"
+    }
     try {
       setTasks(await api(`/tasks?${params}`));
       setError("");
@@ -84,7 +88,7 @@ export default function Dashboard() {
     }
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocal();
 
   return (
     <>
