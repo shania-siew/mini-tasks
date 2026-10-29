@@ -99,63 +99,69 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <TaskForm onSubmit={create} />
+      <div className="dashboard">
+        <aside className="dash-form">
+          <TaskForm onSubmit={create} />
+        </aside>
 
-      <section aria-label="Filters" className="filters">
-        <label>
-          Status
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="">All</option>
-            <option value="todo">To do</option>
-            <option value="in_progress">In progress</option>
-            <option value="done">Done</option>
-          </select>
-        </label>
-        <label className="check">
-          <input type="checkbox" checked={thisWeek} onChange={(e) => setThisWeek(e.target.checked)} />
-          Due this week
-        </label>
-      </section>
+        <section className="dash-list" aria-label="Your tasks">
+          <div className="filters" role="group" aria-label="Filters">
+            <label>
+              Status
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="">All</option>
+                <option value="todo">To do</option>
+                <option value="in_progress">In progress</option>
+                <option value="done">Done</option>
+              </select>
+            </label>
+            <label className="check">
+              <input type="checkbox" checked={thisWeek} onChange={(e) => setThisWeek(e.target.checked)} />
+              Due this week
+            </label>
+          </div>
 
-      {error && <p role="alert" className="error">{error}</p>}
-      {loading && <p className="muted">Loading…</p>}
-      {!loading && tasks.length === 0 && <p className="muted">No tasks yet. Add one above.</p>}
+          {error && <p role="alert" className="error">{error}</p>}
+          {loading && <p className="muted">Loading…</p>}
+          {!loading && tasks.length === 0 && <p className="muted">No tasks yet. Add one on the left.</p>}
 
-      <ul className="tasks">
-        {tasks.map((t) =>
-          editingId === t.id ? (
-            <li key={t.id}>
-              <TaskForm initial={t} onSubmit={(input) => update(t.id, input)} onCancel={() => setEditingId(null)} />
-            </li>
-          ) : (
-            <li key={t.id} className={`card task ${t.status}`}>
-              <div className="grow">
-                <strong>{t.title}</strong> <span className={`badge ${t.priority}`}>{t.priority}</span>
-                {t.description && <p className="muted">{t.description}</p>}
-                {t.due_date && (
-                  <small className={t.due_date < today && t.status !== "done" ? "error" : "muted"}>
-                    Due {t.due_date}
-                    {t.due_date < today && t.status !== "done" ? " (overdue)" : ""}
-                  </small>
-                )}
-              </div>
-              <div className="row">
-                <select
-                  aria-label={`Status of ${t.title}`}
-                  value={t.status}
-                  onChange={(e) => changeStatus(t, e.target.value)}
-                >
-                  {Object.keys(STATUS_LABEL).map((s) => (
-                    <option key={s} value={s}>{STATUS_LABEL[s]}</option>
-                  ))}
-                </select>
-                <button onClick={() => setEditingId(t.id)} aria-label={`Edit ${t.title}`}>Edit</button>
-                <button onClick={() => remove(t)} aria-label={`Delete ${t.title}`}>Delete</button>
-              </div>
-            </li>
-          )
-        )}
-      </ul>
+          <ul className="tasks">
+            {tasks.map((t) =>
+              editingId === t.id ? (
+                <li key={t.id}>
+                  <TaskForm initial={t} onSubmit={(input) => update(t.id, input)} onCancel={() => setEditingId(null)} />
+                </li>
+              ) : (
+                <li key={t.id} className={`card task ${t.status}`}>
+                  <div className="grow">
+                    <strong>{t.title}</strong> <span className={`badge ${t.priority}`}>{t.priority}</span>
+                    {t.description && <p className="muted">{t.description}</p>}
+                    {t.due_date && (
+                      <small className={t.due_date < today && t.status !== "done" ? "error" : "muted"}>
+                        Due {t.due_date}
+                        {t.due_date < today && t.status !== "done" ? " (overdue)" : ""}
+                      </small>
+                    )}
+                  </div>
+                  <div className="row">
+                    <select
+                      aria-label={`Status of ${t.title}`}
+                      value={t.status}
+                      onChange={(e) => changeStatus(t, e.target.value)}
+                    >
+                      {Object.keys(STATUS_LABEL).map((s) => (
+                        <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+                      ))}
+                    </select>
+                    <button onClick={() => setEditingId(t.id)} aria-label={`Edit ${t.title}`}>Edit</button>
+                    <button className="danger" onClick={() => remove(t)} aria-label={`Delete ${t.title}`}>Delete</button>
+                  </div>
+                </li>
+              )
+            )}
+          </ul>
+        </section>
+      </div>
     </>
   );
 }

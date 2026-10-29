@@ -7,7 +7,7 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, sans-serif; }
-main { max-width: 760px; margin: 0 auto; padding: 1rem; }
+main { max-width: 1100px; margin: 0 auto; padding: 1rem; }
 .skip { position: absolute; left: -999px; } .skip:focus { left: 8px; top: 8px; background: var(--card); padding: 4px 8px; }
 h1, h2 { margin: 0 0 .5rem; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin: 1rem 0; }
@@ -31,3 +31,17 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 .badge { font-size: .7rem; text-transform: uppercase; padding: 1px 6px; border-radius: 99px; border: 1px solid var(--border); }
 .badge.high { color: var(--danger); border-color: var(--danger); }
 .muted { color: var(--muted); } .error { color: var(--danger); }
+
+/* Delete button: solid red in both light and dark mode */
+button.danger { background: #c62828; border-color: #c62828; color: #fff; }
+button.danger:hover:not(:disabled) { background: #a81f1f; border-color: #a81f1f; }
+
+/* Dashboard layout: stacked on phones (default), two columns on wide screens */
+.dash-form .card { margin-top: 0; }
+@media (min-width: 900px) {
+  .dashboard { display: grid; grid-template-columns: 380px 1fr; gap: 1.5rem; align-items: start; }
+  .dash-form { position: sticky; top: 1rem; }
+  .dash-list { max-height: calc(100vh - 7rem); overflow-y: auto; padding-right: .5rem; }
+  .dash-list .filters { position: sticky; top: 0; z-index: 1; background: var(--bg); padding: .5rem 0; }
+  .dash-list .tasks .card:first-child { margin-top: .5rem; }
+}
