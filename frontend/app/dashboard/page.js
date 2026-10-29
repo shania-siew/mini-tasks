@@ -91,77 +91,93 @@ export default function Dashboard() {
   const today = todayLocal();
 
   return (
-    <>
-      <header className="top">
-        <h1>Mini Tasks</h1>
-        <div>
-          <span className="muted">{email}</span> <button onClick={logout}>Sign out</button>
+    <div className="dash-page">
+      <header className="top-bar">
+        <div className="top-inner">
+          <div className="brand">
+            {/* White checked-box logo (uses the text colour, so it is white in dark mode) */}
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="4.5" strokeWidth="2" />
+              <path d="M8 12.5l3 3 5-6" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <h1>Mini Tasks</h1>
+          </div>
+          <div className="user">
+            <span className="muted">{email}</span>
+            <button onClick={logout}>Sign out</button>
+          </div>
         </div>
       </header>
 
-      <div className="dashboard">
-        <aside className="dash-form">
-          <TaskForm onSubmit={create} />
-        </aside>
+      <div className="dash-body">
+        <div className="dash-content">
+          <div className="dashboard">
+            <aside className="dash-form">
+              <TaskForm onSubmit={create} />
+            </aside>
 
-        <section className="dash-list" aria-label="Your tasks">
-          <div className="filters" role="group" aria-label="Filters">
-            <label>
-              Status
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option value="">All</option>
-                <option value="todo">To do</option>
-                <option value="in_progress">In progress</option>
-                <option value="done">Done</option>
-              </select>
-            </label>
-            <label className="check">
-              <input type="checkbox" checked={thisWeek} onChange={(e) => setThisWeek(e.target.checked)} />
-              Due this week
-            </label>
+            <section className="dash-list" aria-label="Your tasks">
+              <div className="filters" role="group" aria-label="Filters">
+                <label>
+                  Status
+                  <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                    <option value="">All</option>
+                    <option value="todo">To do</option>
+                    <option value="in_progress">In progress</option>
+                    <option value="done">Done</option>
+                  </select>
+                </label>
+                <label className="check">
+                  <input type="checkbox" checked={thisWeek} onChange={(e) => setThisWeek(e.target.checked)} />
+                  Due this week
+                </label>
+              </div>
+
+              <div className="tasks-scroll">
+                {error && <p role="alert" className="error">{error}</p>}
+                {loading && <p className="muted">Loading…</p>}
+                {!loading && tasks.length === 0 && <p className="muted">No tasks yet. Add one on the left.</p>}
+
+                <ul className="tasks">
+                  {tasks.map((t) =>
+                    editingId === t.id ? (
+                      <li key={t.id}>
+                        <TaskForm initial={t} onSubmit={(input) => update(t.id, input)} onCancel={() => setEditingId(null)} />
+                      </li>
+                    ) : (
+                      <li key={t.id} className={`card task ${t.status}`}>
+                        <div className="grow">
+                          <strong>{t.title}</strong> <span className={`badge ${t.priority}`}>{t.priority}</span>
+                          {t.description && <p className="muted">{t.description}</p>}
+                          {t.due_date && (
+                            <small className={t.due_date < today && t.status !== "done" ? "error" : "muted"}>
+                              Due {t.due_date}
+                              {t.due_date < today && t.status !== "done" ? " (overdue)" : ""}
+                            </small>
+                          )}
+                        </div>
+                        <div className="row">
+                          <select
+                            aria-label={`Status of ${t.title}`}
+                            value={t.status}
+                            onChange={(e) => changeStatus(t, e.target.value)}
+                          >
+                            {Object.keys(STATUS_LABEL).map((s) => (
+                              <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+                            ))}
+                          </select>
+                          <button onClick={() => setEditingId(t.id)} aria-label={`Edit ${t.title}`}>Edit</button>
+                          <button className="danger" onClick={() => remove(t)} aria-label={`Delete ${t.title}`}>Delete</button>
+                        </div>
+                      </li>
+                    )
+                  )}
+                </ul>
+              </div>
+            </section>
           </div>
-
-          {error && <p role="alert" className="error">{error}</p>}
-          {loading && <p className="muted">Loading…</p>}
-          {!loading && tasks.length === 0 && <p className="muted">No tasks yet. Add one on the left.</p>}
-
-          <ul className="tasks">
-            {tasks.map((t) =>
-              editingId === t.id ? (
-                <li key={t.id}>
-                  <TaskForm initial={t} onSubmit={(input) => update(t.id, input)} onCancel={() => setEditingId(null)} />
-                </li>
-              ) : (
-                <li key={t.id} className={`card task ${t.status}`}>
-                  <div className="grow">
-                    <strong>{t.title}</strong> <span className={`badge ${t.priority}`}>{t.priority}</span>
-                    {t.description && <p className="muted">{t.description}</p>}
-                    {t.due_date && (
-                      <small className={t.due_date < today && t.status !== "done" ? "error" : "muted"}>
-                        Due {t.due_date}
-                        {t.due_date < today && t.status !== "done" ? " (overdue)" : ""}
-                      </small>
-                    )}
-                  </div>
-                  <div className="row">
-                    <select
-                      aria-label={`Status of ${t.title}`}
-                      value={t.status}
-                      onChange={(e) => changeStatus(t, e.target.value)}
-                    >
-                      {Object.keys(STATUS_LABEL).map((s) => (
-                        <option key={s} value={s}>{STATUS_LABEL[s]}</option>
-                      ))}
-                    </select>
-                    <button onClick={() => setEditingId(t.id)} aria-label={`Edit ${t.title}`}>Edit</button>
-                    <button className="danger" onClick={() => remove(t)} aria-label={`Delete ${t.title}`}>Delete</button>
-                  </div>
-                </li>
-              )
-            )}
-          </ul>
-        </section>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
