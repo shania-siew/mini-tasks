@@ -76,3 +76,67 @@ main:has(> .dash-page) { max-width: none; padding: 0; }
   .dash-form { position: sticky; top: 1rem; }
   .tasks-scroll { max-height: calc(100vh - 13rem); overflow-y: auto; padding-right: .5rem; }
 }
+
+/* ---------- Polish: colours, stats, toast, animation ---------- */
+:root { --amber: #b7791f; --green: #2f855a; }
+@media (prefers-color-scheme: dark) {
+  :root { --amber: #f5a524; --green: #4cc38a; }
+}
+
+/* Stats strip */
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: .6rem; margin-bottom: 1.25rem; }
+.stats .stat:last-child { grid-column: 1 / -1; }
+@media (min-width: 600px) {
+  .stats { grid-template-columns: repeat(5, 1fr); }
+  .stats .stat:last-child { grid-column: auto; }
+}
+.stat { display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: .6rem .9rem; animation: pop-in .3s ease both; }
+.stat-num { font-size: 1.6rem; font-weight: 700; line-height: 1.1; }
+.stat-label { font-size: .8rem; color: var(--muted); }
+.stat.good .stat-num { color: var(--green); }
+.stat.bad .stat-num { color: var(--danger); }
+
+/* Task cards: coloured left edge by priority, coloured chips and due dates */
+.task { border-left: 4px solid transparent; animation: pop-in .28s ease both; transition: border-color .15s, box-shadow .15s; }
+.task:hover { box-shadow: 0 6px 18px rgba(0, 0, 0, .25); }
+.task.p-high { border-left-color: var(--danger); }
+.task.p-medium { border-left-color: var(--amber); }
+.task.p-low { border-left-color: var(--green); }
+.badge.medium { color: var(--amber); border-color: var(--amber); }
+.badge.low { color: var(--green); border-color: var(--green); }
+.status-select.s-in_progress { border-color: var(--accent); }
+.status-select.s-done { border-color: var(--green); color: var(--green); }
+.due { font-size: .8rem; }
+.due.overdue { color: var(--danger); font-weight: 600; }
+.due.soon { color: var(--amber); font-weight: 600; }
+.due.normal, .due.muted { color: var(--muted); }
+
+/* Loading skeletons, cold-start notice, empty state */
+.skeleton { height: 96px; background: linear-gradient(90deg, var(--card) 25%, var(--border) 50%, var(--card) 75%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; }
+.notice { background: var(--card); border: 1px dashed var(--border); border-radius: 10px; padding: .6rem .9rem; margin: 0 0 1rem; color: var(--muted); }
+.empty { text-align: center; padding: 2rem 1rem; color: var(--muted); }
+.empty svg { opacity: .55; }
+.empty p { margin: .25rem 0; }
+
+/* Undo toast */
+.toast { position: fixed; left: 50%; bottom: 1.25rem; z-index: 20; display: flex; align-items: center; gap: .9rem; max-width: calc(100vw - 2rem); background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: .6rem .9rem; box-shadow: 0 10px 30px rgba(0, 0, 0, .4); transform: translateX(-50%); animation: toast-in .25s ease both; }
+.toast span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.toast button { color: var(--accent); font-weight: 600; }
+
+/* Buttons and fields: smooth hover / focus */
+button, select, input, textarea { transition: background-color .15s, border-color .15s, box-shadow .15s, transform .1s, filter .15s; }
+button:not(:disabled):hover { border-color: var(--accent); }
+button:not(:disabled):active { transform: translateY(1px); }
+button.danger:not(:disabled):hover { border-color: #a81f1f; }
+button.primary { background-image: linear-gradient(135deg, rgba(255, 255, 255, .2), rgba(0, 0, 0, .12)); }
+button.primary:not(:disabled):hover { filter: brightness(1.1); }
+input:focus-visible, select:focus-visible, textarea:focus-visible { box-shadow: 0 0 0 4px rgba(109, 155, 255, .2); }
+
+@keyframes pop-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* Respect the "reduce motion" accessibility setting */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

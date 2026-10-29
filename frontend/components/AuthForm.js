@@ -11,12 +11,15 @@ export default function AuthForm({ mode }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [slow, setSlow] = useState(false);
   const isLogin = mode === "login";
 
   async function onSubmit(e) {
     e.preventDefault();
     setBusy(true);
     setError("");
+    // Free-tier hosting sleeps when idle; tell the user why the first request is slow
+    const slowTimer = setTimeout(() => setSlow(true), 4000);
     try {
       const res = await api(`/auth/${mode}`, "POST", { email, password });
       session.save(res.access_token, res.user);
@@ -24,6 +27,8 @@ export default function AuthForm({ mode }) {
     } catch (err) {
       setError(err.message || "Request failed");
     } finally {
+      clearTimeout(slowTimer);
+      setSlow(false);
       setBusy(false);
     }
   }
@@ -48,6 +53,11 @@ export default function AuthForm({ mode }) {
         />
       </label>
       {error && <p role="alert" className="error">{error}</p>}
+      {busy && slow && (
+        <p className="muted" role="status">
+          Waking up the server… the first request can take up to a minute.
+        </p>
+      )}
       <button className="primary" disabled={busy}>{busy ? "Please wait…" : isLogin ? "Sign in" : "Sign up"}</button>
       <p className="muted">
         {isLogin ? (
