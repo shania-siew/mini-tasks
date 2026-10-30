@@ -1,15 +1,15 @@
 # Mini Tasks
 
-A task manager: sign up / sign in, create / update / delete tasks, filter by status or "due this week", and an optional AI "Suggest due date" button.
+A task manager: sign up / sign in, create / update / delete tasks, filter by status or "due this week".
 
 | | URL |
 |---|---|
-| Web app | `https://<your-frontend-url>` |
-| API base | `https://<your-api-url>` (docs at `/docs`, health at `/health`) |
+| Web app | `https://mini-tasks-web.onrender.com` |
+| API base | `https://mini-tasks-x74e.onrender.com` (docs at `/docs`, health at `/health`) |
 | Demo user | `demo@minitasks.dev` / `DemoPass123!` (non-admin) |
 
 ## Stack
-Next.js 14 (App Router, JavaScript) · FastAPI (Python 3.12) · MongoDB · JWT (PyJWT) + bcrypt · OpenAI `gpt-4o-mini` (optional)
+Next.js 14 (App Router, JavaScript) · FastAPI (Python 3.12) · MongoDB · JWT (PyJWT) + bcrypt
 
 ## Architecture
 
@@ -126,16 +126,10 @@ Note: Render's free instances sleep after ~15 idle minutes, so the first request
 - CORS restricted to configured origins and methods; security headers on API and frontend; no secrets in the repo.
 - Input validated by Pydantic (lengths, enums, dates, email).
 
-## AI due-date suggestion
-- **Flow:** the frontend sends title + description to `/ai/suggest-due-date`; the backend calls OpenAI with the key kept server-side.
-- **Prompt:** system prompt gives today's date, asks for JSON only (`due_date`, `reason`), says to honour explicit deadlines, and tells the model the task text is *data, not instructions*.
-- **Safeguards:** auth required; input length capped (2000 chars); `response_format=json_object`, low temperature, `max_tokens=120`; output parsed and validated as a date, then clamped to [today, today+365d]; upstream errors become a generic 502 (no leakage); 503 if no key configured; the suggestion only pre-fills the date field, and the user must still save.
-
 ## Tradeoffs & future improvements
 - **JWT in localStorage**: simple and works across two domains, but exposed to XSS. Better: httpOnly, SameSite cookies with a shared parent domain/proxy plus CSRF protection, and refresh tokens.
 - **Dates stored as ISO strings** (`YYYY-MM-DD`): easy range queries, no timezone surprises for date-only values; "this week" uses the server's date (Mon–Sun).
 - **Rate limiting is in-memory** (login: 10 failures / 5 min per IP+email; signup: 20 / hour per IP). It resets on restart and is per-instance; with several instances I would move it to Redis. The AI endpoint is auth-protected but not separately rate limited.
-- **Plain JavaScript frontend** (no TypeScript) to keep the code approachable; the API contract is enforced server-side by Pydantic, and types would be the first thing I'd add to the frontend with more time.
 - **Free-tier cold starts**: the free backend sleeps when idle, so the first request can be slow.
 - **Sync PyMongo** in FastAPI's threadpool instead of Motor, for simplicity; async driver would scale better.
 - **Realtime**: optimistic UI is implemented for status change and delete (with rollback); SSE/WebSocket sync across tabs is future work.
